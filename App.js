@@ -6,25 +6,140 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Modal,
+  FlatList,
 } from "react-native";
 
 export default function App() {
+
+  // Cantidad que escribe el usuario
   const [cantidad, setCantidad] = useState("");
+
+  // Resultado
   const [resultado, setResultado] = useState("");
 
-  // Tasa de ejemplo
-  const tasa = 4000;
+  // Moneda de origen
+  const [monedaOrigen, setMonedaOrigen] = useState({
+    codigo: "USD",
+    nombre: "Dólar estadounidense",
+    bandera: "🇺🇸",
+  });
 
+  // Moneda de destino
+  const [monedaDestino, setMonedaDestino] = useState({
+    codigo: "COP",
+    nombre: "Peso colombiano",
+    bandera: "🇨🇴",
+  });
+
+  // Controla si se muestra el selector
+  const [mostrarSelector, setMostrarSelector] = useState(false);
+
+  // Indica qué moneda estamos seleccionando
+  const [seleccionando, setSeleccionando] = useState("origen");
+
+  // Lista de monedas
+  const monedas = [
+    {
+      codigo: "USD",
+      nombre: "Dólar estadounidense",
+      bandera: "🇺🇸",
+      tasa: 1,
+    },
+    {
+      codigo: "COP",
+      nombre: "Peso colombiano",
+      bandera: "🇨🇴",
+      tasa: 4000,
+    },
+    {
+      codigo: "EUR",
+      nombre: "Euro",
+      bandera: "🇪🇺",
+      tasa: 0.85,
+    },
+    {
+      codigo: "GBP",
+      nombre: "Libra esterlina",
+      bandera: "🇬🇧",
+      tasa: 0.74,
+    },
+    {
+      codigo: "JPY",
+      nombre: "Yen japonés",
+      bandera: "🇯🇵",
+      tasa: 150,
+    },
+    {
+      codigo: "MXN",
+      nombre: "Peso mexicano",
+      bandera: "🇲🇽",
+      tasa: 18,
+    },
+  ];
+
+  // Abrir selector de monedas
+  const abrirSelector = (tipo) => {
+    setSeleccionando(tipo);
+    setMostrarSelector(true);
+  };
+
+  // Elegir una moneda
+  const elegirMoneda = (moneda) => {
+
+    if (seleccionando === "origen") {
+      setMonedaOrigen(moneda);
+    } else {
+      setMonedaDestino(moneda);
+    }
+
+    setMostrarSelector(false);
+
+    // Limpiar resultado
+    setResultado("");
+  };
+
+  // Convertir
   const convertir = () => {
+
     if (cantidad === "") {
       setResultado("");
       return;
     }
 
     const numero = parseFloat(cantidad);
-    const conversion = numero * tasa;
 
-    setResultado(conversion.toLocaleString("es-CO"));
+    // Buscamos las tasas
+    const origen = monedas.find(
+      (moneda) => moneda.codigo === monedaOrigen.codigo
+    );
+
+    const destino = monedas.find(
+      (moneda) => moneda.codigo === monedaDestino.codigo
+    );
+
+    // Convertimos primero a USD
+    const valorUSD = numero / origen.tasa;
+
+    // Después convertimos a la moneda destino
+    const conversion = valorUSD * destino.tasa;
+
+    setResultado(
+      conversion.toLocaleString("es-CO", {
+        maximumFractionDigits: 2,
+      })
+    );
+  };
+
+  // Cambiar las monedas
+  const intercambiarMonedas = () => {
+
+    const temporal = monedaOrigen;
+
+    setMonedaOrigen(monedaDestino);
+    setMonedaDestino(temporal);
+
+    setResultado("");
   };
 
   return (
@@ -32,87 +147,230 @@ export default function App() {
 
       {/* ENCABEZADO */}
       <View style={styles.header}>
-        <Text style={styles.logo}>🌎 WorldRate</Text>
+
+        <Text style={styles.logo}>
+          🌎 WorldRate
+        </Text>
 
         <Text style={styles.subtitle}>
           Convierte monedas fácilmente
         </Text>
+
       </View>
 
-      {/* TARJETA DEL CONVERSOR */}
+
+      {/* TARJETA */}
       <View style={styles.card}>
 
-        <Text style={styles.cardTitle}>
+        <Text style={styles.title}>
           Conversor de divisas
         </Text>
 
+
+        {/* MONEDA ORIGEN */}
+
         <Text style={styles.label}>
-          Dólares estadounidenses
+          De
         </Text>
 
-        <Text style={styles.currency}>
-          USD 🇺🇸
+        <TouchableOpacity
+          style={styles.currencyButton}
+          onPress={() => abrirSelector("origen")}
+        >
+
+          <Text style={styles.flag}>
+            {monedaOrigen.bandera}
+          </Text>
+
+          <View style={styles.currencyInfo}>
+
+            <Text style={styles.currencyCode}>
+              {monedaOrigen.codigo}
+            </Text>
+
+            <Text style={styles.currencyName}>
+              {monedaOrigen.nombre}
+            </Text>
+
+          </View>
+
+          <Text style={styles.arrow}>
+            ▼
+          </Text>
+
+        </TouchableOpacity>
+
+
+        {/* BOTÓN INTERCAMBIAR */}
+
+        <TouchableOpacity
+          style={styles.swapButton}
+          onPress={intercambiarMonedas}
+        >
+
+          <Text style={styles.swapText}>
+            ⇅
+          </Text>
+
+        </TouchableOpacity>
+
+
+        {/* MONEDA DESTINO */}
+
+        <Text style={styles.label}>
+          A
+        </Text>
+
+        <TouchableOpacity
+          style={styles.currencyButton}
+          onPress={() => abrirSelector("destino")}
+        >
+
+          <Text style={styles.flag}>
+            {monedaDestino.bandera}
+          </Text>
+
+          <View style={styles.currencyInfo}>
+
+            <Text style={styles.currencyCode}>
+              {monedaDestino.codigo}
+            </Text>
+
+            <Text style={styles.currencyName}>
+              {monedaDestino.nombre}
+            </Text>
+
+          </View>
+
+          <Text style={styles.arrow}>
+            ▼
+          </Text>
+
+        </TouchableOpacity>
+
+
+        {/* CANTIDAD */}
+
+        <Text style={styles.label}>
+          Cantidad
         </Text>
 
         <TextInput
           style={styles.input}
-          placeholder="Ingresa una cantidad"
+          placeholder="Ejemplo: 100"
           placeholderTextColor="#999"
           keyboardType="numeric"
           value={cantidad}
           onChangeText={setCantidad}
         />
 
-        <View style={styles.arrow}>
-          <Text style={styles.arrowText}>↓</Text>
-        </View>
 
-        <Text style={styles.label}>
-          Pesos colombianos
-        </Text>
-
-        <Text style={styles.currency}>
-          COP 🇨🇴
-        </Text>
-
-        <View style={styles.resultBox}>
-          <Text style={styles.result}>
-            {resultado === "" ? "$ 0 COP" : `$ ${resultado} COP`}
-          </Text>
-        </View>
-
-        <Text style={styles.rate}>
-          1 USD = {tasa.toLocaleString("es-CO")} COP
-        </Text>
+        {/* BOTÓN CONVERTIR */}
 
         <TouchableOpacity
           style={styles.button}
           onPress={convertir}
         >
+
           <Text style={styles.buttonText}>
             Convertir
           </Text>
+
         </TouchableOpacity>
 
+
+        {/* RESULTADO */}
+
+        <View style={styles.resultBox}>
+
+          <Text style={styles.resultLabel}>
+            Resultado
+          </Text>
+
+          <Text style={styles.result}>
+            {resultado === ""
+              ? "0 " + monedaDestino.codigo
+              : resultado + " " + monedaDestino.codigo
+            }
+          </Text>
+
+        </View>
+
       </View>
 
-      {/* INFORMACIÓN */}
-      <View style={styles.info}>
-        <Text style={styles.infoTitle}>
-          💱 WorldRate
-        </Text>
 
-        <Text style={styles.infoText}>
-          Convierte tus monedas de manera rápida,
-          sencilla y sin complicaciones.
-        </Text>
-      </View>
+      {/* MODAL PARA ELEGIR MONEDA */}
+
+      <Modal
+        visible={mostrarSelector}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setMostrarSelector(false)}
+      >
+
+        <View style={styles.modalBackground}>
+
+          <View style={styles.modal}>
+
+            <Text style={styles.modalTitle}>
+              Selecciona una moneda
+            </Text>
+
+            <FlatList
+              data={monedas}
+              keyExtractor={(item) => item.codigo}
+              renderItem={({ item }) => (
+
+                <TouchableOpacity
+                  style={styles.option}
+                  onPress={() => elegirMoneda(item)}
+                >
+
+                  <Text style={styles.optionFlag}>
+                    {item.bandera}
+                  </Text>
+
+                  <View>
+
+                    <Text style={styles.optionCode}>
+                      {item.codigo}
+                    </Text>
+
+                    <Text style={styles.optionName}>
+                      {item.nombre}
+                    </Text>
+
+                  </View>
+
+                </TouchableOpacity>
+
+              )}
+            />
+
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setMostrarSelector(false)}
+            >
+
+              <Text style={styles.closeText}>
+                Cancelar
+              </Text>
+
+            </TouchableOpacity>
+
+          </View>
+
+        </View>
+
+      </Modal>
 
     </SafeAreaView>
   );
 }
 
+
 const styles = StyleSheet.create({
+
   container: {
     flex: 1,
     backgroundColor: "#0F172A",
@@ -121,8 +379,8 @@ const styles = StyleSheet.create({
 
   header: {
     alignItems: "center",
-    marginTop: 30,
-    marginBottom: 25,
+    marginTop: 25,
+    marginBottom: 20,
   },
 
   logo: {
@@ -132,35 +390,81 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    fontSize: 15,
     color: "#94A3B8",
-    marginTop: 8,
+    fontSize: 15,
+    marginTop: 6,
   },
 
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 25,
+    borderRadius: 22,
+    padding: 22,
   },
 
-  cardTitle: {
+  title: {
     fontSize: 23,
     fontWeight: "bold",
     color: "#0F172A",
-    marginBottom: 25,
+    marginBottom: 20,
   },
 
   label: {
-    fontSize: 14,
     color: "#64748B",
-    marginBottom: 6,
+    fontSize: 14,
+    marginBottom: 7,
+    marginTop: 5,
   },
 
-  currency: {
-    fontSize: 18,
+  currencyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 12,
+    padding: 12,
+  },
+
+  flag: {
+    fontSize: 30,
+    marginRight: 12,
+  },
+
+  currencyInfo: {
+    flex: 1,
+  },
+
+  currencyCode: {
+    fontSize: 17,
     fontWeight: "bold",
     color: "#0F172A",
-    marginBottom: 10,
+  },
+
+  currencyName: {
+    fontSize: 12,
+    color: "#64748B",
+    marginTop: 2,
+  },
+
+  arrow: {
+    fontSize: 15,
+    color: "#64748B",
+  },
+
+  swapButton: {
+    alignSelf: "center",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#2563EB",
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: 8,
+  },
+
+  swapText: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "bold",
   },
 
   input: {
@@ -173,40 +477,9 @@ const styles = StyleSheet.create({
     color: "#0F172A",
   },
 
-  arrow: {
-    alignItems: "center",
-    marginVertical: 12,
-  },
-
-  arrowText: {
-    fontSize: 28,
-    color: "#2563EB",
-  },
-
-  resultBox: {
-    height: 60,
-    backgroundColor: "#F1F5F9",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 5,
-  },
-
-  result: {
-    fontSize: 25,
-    fontWeight: "bold",
-    color: "#2563EB",
-  },
-
-  rate: {
-    textAlign: "center",
-    color: "#64748B",
-    marginTop: 15,
-  },
-
   button: {
-    backgroundColor: "#2563EB",
     height: 55,
+    backgroundColor: "#2563EB",
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
@@ -219,21 +492,84 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  info: {
-    marginTop: 25,
+  resultBox: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 12,
+    padding: 18,
     alignItems: "center",
+    marginTop: 20,
   },
 
-  infoTitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
+  resultLabel: {
+    color: "#64748B",
+    fontSize: 14,
+  },
+
+  result: {
+    color: "#2563EB",
+    fontSize: 27,
     fontWeight: "bold",
+    marginTop: 5,
   },
 
-  infoText: {
-    color: "#94A3B8",
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 21,
+  modalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
   },
+
+  modal: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    padding: 20,
+    maxHeight: "80%",
+  },
+
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#0F172A",
+    marginBottom: 15,
+  },
+
+  option: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+
+  optionFlag: {
+    fontSize: 28,
+    marginRight: 15,
+  },
+
+  optionCode: {
+    fontSize: 17,
+    fontWeight: "bold",
+    color: "#0F172A",
+  },
+
+  optionName: {
+    fontSize: 13,
+    color: "#64748B",
+    marginTop: 2,
+  },
+
+  closeButton: {
+    backgroundColor: "#E2E8F0",
+    padding: 15,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 15,
+  },
+
+  closeText: {
+    color: "#0F172A",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
 });
